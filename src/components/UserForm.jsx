@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
-function UserForm({ initialValues, onSubmit, onCancel }) {
-  const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '' });
+function UserForm({ initialValues, onSubmit, onCancel, departments }) {
+  const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', department: '' });
   const [errors, setErrors] = useState({});
 
   function validateField(name, value) {
@@ -18,6 +18,8 @@ function UserForm({ initialValues, onSubmit, onCancel }) {
         const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailPattern.test(value) ? '' : 'Please enter a valid email address';
       }
+      case 'department':
+        return value.trim() ? '' : 'Department is required';
       default:
         return '';
     }
@@ -29,7 +31,11 @@ function UserForm({ initialValues, onSubmit, onCancel }) {
         firstName: initialValues.firstName || '',
         lastName: initialValues.lastName || '',
         email: initialValues.email || '',
+        department: initialValues.department || '',
       });
+      setErrors({});
+    } else {
+      setFormData({ firstName: '', lastName: '', email: '', department: '' });
       setErrors({});
     }
   }, [initialValues]);
@@ -50,6 +56,7 @@ function UserForm({ initialValues, onSubmit, onCancel }) {
       firstName: validateField('firstName', formData.firstName),
       lastName: validateField('lastName', formData.lastName),
       email: validateField('email', formData.email),
+      department: validateField('department', formData.department),
     };
 
     setErrors(nextErrors);
@@ -64,7 +71,8 @@ function UserForm({ initialValues, onSubmit, onCancel }) {
   const isValid =
     !validateField('firstName', formData.firstName) &&
     !validateField('lastName', formData.lastName) &&
-    !validateField('email', formData.email);
+    !validateField('email', formData.email) &&
+    !validateField('department', formData.department);
 
   return (
     <form className="form-grid" onSubmit={handleSubmit}>
@@ -84,6 +92,19 @@ function UserForm({ initialValues, onSubmit, onCancel }) {
         <label htmlFor="email">Email</label>
         <input id="email" name="email" type="email" value={formData.email} onChange={handleChange} />
         {errors.email && <span className="error-text">{errors.email}</span>}
+      </div>
+
+      <div className={`form-field ${errors.department ? 'has-error' : ''}`}>
+        <label htmlFor="department">Department</label>
+        <select id="department" name="department" value={formData.department} onChange={handleChange}>
+          <option value="">Select department</option>
+          {(departments || []).map((department) => (
+            <option key={department} value={department}>
+              {department}
+            </option>
+          ))}
+        </select>
+        {errors.department && <span className="error-text">{errors.department}</span>}
       </div>
 
       <div className="form-actions">

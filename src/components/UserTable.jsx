@@ -22,7 +22,11 @@ function UserTable({ users, onEdit, onDelete, sortConfig, onSort }) {
                 Email {sortConfig?.key === 'email' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
               </button>
             </th>
-            <th>Department</th>
+            <th>
+              <button type="button" className="sort-btn" onClick={() => onSort('department')}>
+                Department {sortConfig?.key === 'department' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+              </button>
+            </th>
             <th>Actions</th>
           </tr>
         </thead>

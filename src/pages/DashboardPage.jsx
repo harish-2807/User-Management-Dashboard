@@ -12,6 +12,14 @@ import { addUser, deleteUser, getUsers, updateUser } from '../services/api';
 
 const DEPARTMENTS = ['HR', 'IT', 'Finance', 'Marketing', 'Sales'];
 
+function getInitialDepartment(user, index) {
+  if (user.department && DEPARTMENTS.includes(user.department)) {
+    return user.department;
+  }
+
+  return DEPARTMENTS[index % DEPARTMENTS.length];
+}
+
 function DashboardPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,16 +33,20 @@ function DashboardPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [toastMessage, setToastMessage] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
+  const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [isDepartmentMenuOpen, setIsDepartmentMenuOpen] = useState(false);
+  const [pinnedUserId, setPinnedUserId] = useState(null);
 
   useEffect(() => {
     async function loadUsers() {
       try {
         const response = await getUsers();
-        const usersWithDepartments = response.data.map((user) => ({
+        const usersWithDepartments = response.data.map((user, index) => ({
           ...user,
           firstName: user.name.split(' ')[0],
           lastName: user.name.split(' ').slice(1).join(' '),
-          department: DEPARTMENTS[Math.floor(Math.random() * DEPARTMENTS.length)],
+          department: getInitialDepartment(user, index),
         }));
 
         setUsers(usersWithDepartments);
@@ -65,6 +77,7 @@ function DashboardPage() {
       const payload = {
         name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
+        department: formData.department,
       };
 
       const response = await addUser(payload);
@@ -72,10 +85,12 @@ function DashboardPage() {
         ...response.data,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        department: DEPARTMENTS[Math.floor(Math.random() * DEPARTMENTS.length)],
+        department: formData.department,
       };
 
       setUsers((currentUsers) => [newUser, ...currentUsers]);
+      setCurrentPage(1);
+      setPinnedUserId(newUser.id);
       setIsModalOpen(false);
       setSelectedUser(null);
       setError('');
@@ -90,19 +105,24 @@ function DashboardPage() {
       const payload = {
         name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
+        department: formData.department,
       };
 
       const response = await updateUser(selectedUser.id, payload);
       const updatedUser = {
         ...response.data,
+        id: selectedUser.id,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        department: selectedUser.department,
+        department: formData.department,
       };
 
-      setUsers((currentUsers) =>
-        currentUsers.map((user) => (user.id === selectedUser.id ? updatedUser : user)),
-      );
+      setUsers((currentUsers) => {
+        const filteredUsers = currentUsers.filter((user) => user.id !== selectedUser.id);
+        return [updatedUser, ...filteredUsers];
+      });
+      setCurrentPage(1);
+      setPinnedUserId(updatedUser.id);
       setIsModalOpen(false);
       setSelectedUser(null);
       setError('');
@@ -121,6 +141,9 @@ function DashboardPage() {
     try {
       await deleteUser(userId);
       setUsers((currentUsers) => currentUsers.filter((user) => user.id !== userId));
+      if (pinnedUserId === userId) {
+        setPinnedUserId(null);
+      }
       setError('');
       setToastMessage('User deleted successfully.');
     } catch (err) {
@@ -148,12 +171,23 @@ function DashboardPage() {
     const matchesFirstName = !filters.firstName || user.firstName.toLowerCase().includes(filters.firstName.toLowerCase());
     const matchesLastName = !filters.lastName || user.lastName.toLowerCase().includes(filters.lastName.toLowerCase());
     const matchesEmail = !filters.email || user.email.toLowerCase().includes(filters.email.toLowerCase());
-    const matchesDepartment = !filters.department || user.department.toLowerCase() === filters.department.toLowerCase();
+    const matchesTabDepartment = !selectedDepartment || user.department.toLowerCase() === selectedDepartment.toLowerCase();
+    const matchesFilterDepartment = !filters.department || user.department.toLowerCase() === filters.department.toLowerCase();
 
-    return matchesSearch && matchesFirstName && matchesLastName && matchesEmail && matchesDepartment;
+    return matchesSearch && matchesFirstName && matchesLastName && matchesEmail && matchesTabDepartment && matchesFilterDepartment;
   });
 
   const sortedUsers = [...filteredUsers].sort((a, b) => {
+    if (pinnedUserId) {
+      if (a.id === pinnedUserId) {
+        return -1;
+      }
+
+      if (b.id === pinnedUserId) {
+        return 1;
+      }
+    }
+
     const aValue = a[sortConfig.key]?.toLowerCase() || '';
     const bValue = b[sortConfig.key]?.toLowerCase() || '';
 
@@ -182,7 +216,7 @@ function DashboardPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filters, sortConfig, pageSize]);
+  }, [searchTerm, filters, sortConfig, pageSize, selectedDepartment]);
 
   return (
     <Layout title="User Management Dashboard">
@@ -224,8 +258,56 @@ function DashboardPage() {
           </div>
 
           <div className="action-right">
-            <button type="button" className="nav-btn active">All Users</button>
-            <button type="button" className="nav-btn">Analytics</button>
+            <button
+              type="button"
+              className={`nav-btn ${activeTab === 'all' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('all');
+                setSelectedDepartment('');
+                setIsDepartmentMenuOpen(false);
+              }}
+            >
+              All Users
+            </button>
+            <div className="tab-dropdown">
+              <button
+                type="button"
+                className={`nav-btn ${activeTab === 'departments' ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveTab('departments');
+                  setIsDepartmentMenuOpen((open) => !open);
+                }}
+              >
+                Departments
+              </button>
+              {isDepartmentMenuOpen && (
+                <div className="department-dropdown">
+                  <button
+                    type="button"
+                    className={`department-option ${!selectedDepartment ? 'active' : ''}`}
+                    onClick={() => {
+                      setSelectedDepartment('');
+                      setIsDepartmentMenuOpen(false);
+                    }}
+                  >
+                    All Departments
+                  </button>
+                  {DEPARTMENTS.map((department) => (
+                    <button
+                      key={department}
+                      type="button"
+                      className={`department-option ${selectedDepartment === department ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedDepartment(department);
+                        setIsDepartmentMenuOpen(false);
+                      }}
+                    >
+                      {department}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -263,6 +345,7 @@ function DashboardPage() {
         onChange={setFilters}
         onClose={() => setIsFilterOpen(false)}
         onReset={() => setFilters({ firstName: '', lastName: '', email: '', department: '' })}
+        departments={DEPARTMENTS}
       />
 
       <Modal isOpen={isModalOpen} title={selectedUser ? 'Edit User' : 'Add User'} onClose={closeModal}>
@@ -271,9 +354,11 @@ function DashboardPage() {
             firstName: selectedUser.firstName,
             lastName: selectedUser.lastName,
             email: selectedUser.email,
+            department: selectedUser.department,
           } : undefined}
           onSubmit={selectedUser ? handleEditUser : handleAddUser}
           onCancel={closeModal}
+          departments={DEPARTMENTS}
         />
       </Modal>
 

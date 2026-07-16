@@ -1,4 +1,4 @@
-function FilterPopup({ isOpen, filters, onChange, onClose, onReset }) {
+function FilterPopup({ isOpen, filters, onChange, onClose, onReset, departments }) {
   if (!isOpen) {
     return null;
   }
@@ -32,7 +32,14 @@ function FilterPopup({ isOpen, filters, onChange, onClose, onReset }) {
           </div>
           <div className="form-field">
             <label htmlFor="filter-department">Department</label>
-            <input id="filter-department" name="department" value={filters.department} onChange={handleChange} />
+            <select id="filter-department" name="department" value={filters.department} onChange={handleChange}>
+              <option value="">All Departments</option>
+              {(departments || []).map((department) => (
+                <option key={department} value={department}>
+                  {department}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
         <div className="form-actions">

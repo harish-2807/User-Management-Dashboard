@@ -5,7 +5,7 @@ function UserRow({ user, onEdit, onDelete }) {
       <td>{user.firstName}</td>
       <td>{user.lastName}</td>
       <td>{user.email}</td>
-      <td>{user.department}</td>
+      <td style={{ color: '#111827' }}>{user.department}</td>
       <td>
         <div className="actions-cell">
           <button type="button" className="icon-btn" onClick={() => onEdit(user)} aria-label="Edit user">
