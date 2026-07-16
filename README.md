@@ -75,7 +75,7 @@ npm install
 npm run dev
 ```
 
-Open the app at: http://localhost:5173/
+
 
 ## Build for Production
 
