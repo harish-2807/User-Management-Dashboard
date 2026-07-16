@@ -138,7 +138,7 @@ Layout elements stack and scale gracefully on smaller screens.
 
 ## Deployment
 
-Deployment Link:https://user-management-dashboardd.netlify.app/
+Deployment Link:https://user1dashboard.netlify.app/
 
 
 Demo video - https://drive.google.com/file/d/1h9BogP_Kefj6XpWqquDykkNhNnuO-IkH/view?usp=sharing
